@@ -1,34 +1,43 @@
-const { app, BrowserWindow } = require('electron')
-const path = require('path')
+const { app, BrowserWindow, ipcMain } = require('electron');
+const path = require('path');
+const { authorize } = require('./src/oauth.js');
+
+let mainWindow;
 
 function createWindow() {
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
-    }
-  })
+    mainWindow = new BrowserWindow({
+        width: 1200,
+        height: 800,
+        webPreferences: {
+            nodeIntegration: true,
+            contextIsolation: false
+        }
+    });
 
-  win.loadFile('src/index.html')
-  
-  // Uncomment the following line to open DevTools on startup
-  // win.webContents.openDevTools()
+    mainWindow.loadFile('src/index.html');
 }
 
-app.whenReady().then(() => {
-  createWindow()
-
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow()
+// Handle OAuth start
+ipcMain.handle('start-auth', async () => {
+    try {
+        const client = await authorize();
+        return client.credentials;
+    } catch (error) {
+        console.error('Auth error:', error);
+        throw error;
     }
-  })
-})
+});
+
+app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
-})
+    if (process.platform !== 'darwin') {
+        app.quit();
+    }
+});
+
+app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+        createWindow();
+    }
+});

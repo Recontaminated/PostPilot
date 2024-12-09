@@ -20,72 +20,47 @@
             border: 1px solid #ccc;
             margin-bottom: 10px;
         }
-        .sender-select {
-            margin-bottom: 1rem;
-            padding: 0.5rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            width: 100%;
-            max-width: 300px;
-        }
     </style>
 
     <script>
-        let senderColumn = '';
-        let csvHeaders = [];
-
         function handleCSVUpload(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
             
             reader.onload = function(e) {
                 const text = e.target.result;
-                csvHeaders = text.split('\n')[0].split(',').map(h => h.trim());
+                const headers = text.split('\n')[0].split(',');
+                const columnsContainer = document.getElementById('csv-columns');
+                columnsContainer.innerHTML = '';
                 
-                // Create sender dropdown
-                const senderSelect = document.createElement('select');
-                senderSelect.className = 'sender-select';
-                senderSelect.innerHTML = `
-                    <option value="">Select recipient</option>
-                    ${csvHeaders.map(header => `<option value="${header}">${header}</option>`).join('')}
-                `;
-                
-                senderSelect.addEventListener('change', (e) => {
-                    senderColumn = e.target.value;
-                    updateDraggableColumns();
+                headers.forEach(header => {
+                    const span = document.createElement('span');
+                    span.className = 'csv-column';
+                    span.draggable = true;
+                    span.textContent = header.trim();
+                    span.addEventListener('dragstart', e => {
+                        e.dataTransfer.setData('text/plain', `{{${header.trim()}}}`);
+                    });
+                    columnsContainer.appendChild(span);
                 });
                 
-                // Replace existing sender select if it exists
-                const existingSelect = document.getElementById('sender-select');
-                if (existingSelect) {
-                    existingSelect.replaceWith(senderSelect);
-                } else {
-                    document.getElementById('csv-columns').insertAdjacentElement('beforebegin', senderSelect);
-                }
-                senderSelect.id = 'sender-select';
-                
-                updateDraggableColumns();
+                populateRecipientDropdown(headers);
             };
             
             reader.readAsText(file);
         }
 
-        function updateDraggableColumns() {
-            const columnsContainer = document.getElementById('csv-columns');
-            columnsContainer.innerHTML = '';
+        function populateRecipientDropdown(headers) {
+            const recipientSelect = document.getElementById('recipientColumn');
+            recipientSelect.innerHTML = '<option value="">Choose email column...</option>';
             
-            // Filter out sender column from draggable blocks
-            const availableHeaders = csvHeaders.filter(header => header !== senderColumn);
-            
-            availableHeaders.forEach(header => {
-                const span = document.createElement('span');
-                span.className = 'csv-column';
-                span.draggable = true;
-                span.textContent = header;
-                span.addEventListener('dragstart', e => {
-                    e.dataTransfer.setData('text/plain', `{{${header}}}`);
-                });
-                columnsContainer.appendChild(span);
+            headers.forEach(header => {
+                if (header.toLowerCase().includes('email')) {
+                    const option = document.createElement('option');
+                    option.value = header;
+                    option.textContent = header;
+                    recipientSelect.appendChild(option);
+                }
             });
         }
 
@@ -120,10 +95,17 @@
             <h1 class="text-2xl font-bold mb-6">Email Template Sender</h1>
             
             <div class="mb-6">
-                <label class="block mb-2">CSV File</label>
+                <label class="block mb-2">Select CSV File</label>
                 <input type="file" id="csvFile" accept=".csv" class="border p-2 rounded" onChange="handleCSVUpload(event)">
                 <div id="csvPreview" class="mt-4 overflow-x-auto"></div>
                 <div id="csv-columns" class="mb-4"></div>
+            </div>
+
+            <div class="mb-6">
+                <label class="block mb-2">Select Recipient Column</label>
+                <select id="recipientColumn" class="w-full border p-2 rounded bg-white">
+                    <option value="">Choose email column...</option>
+                </select>
             </div>
 
             <div class="mb-6">
@@ -138,11 +120,10 @@
             </div>
 
             <div class="mb-6">
-                <label class="block mb-2">Gmail Credentials</label>
-                <input type="email" id="gmailUser" placeholder="Gmail address" 
-                    class="w-full border p-2 rounded mb-2">
-                <input type="password" id="gmailPass" placeholder="App Password" 
-                    class="w-full border p-2 rounded">
+                <label class="block mb-2">Gmail Authentication</label>
+                <button id="authBtn" class="bg-blue-500 text-white px-4 py-2 rounded">
+                    Authenticate with Google
+                </button>
             </div>
 
             <div class="flex justify-between items-center">

@@ -15,3 +15,82 @@
 .preview-table th {
     background-color: #f4f4f4;
 }
+
+/* Add this CSS */
+#recipient-selection {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+    margin-bottom: 20px;
+}
+
+#recipient-column {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+/* CSV columns container */
+#csv-columns {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    min-height: 50px;
+}
+
+/* Draggable column styling */
+.csv-column {
+    background: #ffffff;
+    border: 1px solid #0d6efd;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: move;
+    user-select: none;
+    display: inline-block;
+    font-size: 14px;
+    color: #0d6efd;
+    transition: all 0.2s ease;
+}
+
+.csv-column:hover {
+    background: #0d6efd;
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Drag effect */
+.csv-column:active {
+    cursor: grabbing;
+    transform: translateY(0);
+}
+
+/* Label styling */
+#recipient-selection label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    color: #212529;
+}
+
+/* Add to your existing styles */
+#recipientsPreview {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#recipientsPreview option {
+    padding: 4px 8px;
+    cursor: default;
+}
+
+#recipientsPreview option:hover {
+    background-color: #f8f9fa;
+}

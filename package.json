@@ -12,7 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@google-cloud/local-auth": "^3.0.1",
     "electron": "^33.2.1",
+    "electron-store": "^10.0.0",
+    "google-auth-library": "^9.15.0",
+    "googleapis": "^144.0.0",
     "nodemailer": "^6.9.16",
     "papaparse": "^5.4.1"
   },
