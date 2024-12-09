@@ -4,32 +4,115 @@
     <title>Email Template Sender</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="styles.css" rel="stylesheet">
-    <!-- <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/5/tinymce.min.js"></script> -->
     <script src="./tinymce/tinymce.min.js"></script>
 
+    <style>
+        .csv-column {
+            padding: 8px;
+            margin: 4px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            cursor: move;
+            display: inline-block;
+        }
+        #csv-columns {
+            padding: 10px;
+            border: 1px solid #ccc;
+            margin-bottom: 10px;
+        }
+        .sender-select {
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 100%;
+            max-width: 300px;
+        }
+    </style>
+
     <script>
+        let senderColumn = '';
+        let csvHeaders = [];
+
+        function handleCSVUpload(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const text = e.target.result;
+                csvHeaders = text.split('\n')[0].split(',').map(h => h.trim());
+                
+                // Create sender dropdown
+                const senderSelect = document.createElement('select');
+                senderSelect.className = 'sender-select';
+                senderSelect.innerHTML = `
+                    <option value="">Select recipient</option>
+                    ${csvHeaders.map(header => `<option value="${header}">${header}</option>`).join('')}
+                `;
+                
+                senderSelect.addEventListener('change', (e) => {
+                    senderColumn = e.target.value;
+                    updateDraggableColumns();
+                });
+                
+                // Replace existing sender select if it exists
+                const existingSelect = document.getElementById('sender-select');
+                if (existingSelect) {
+                    existingSelect.replaceWith(senderSelect);
+                } else {
+                    document.getElementById('csv-columns').insertAdjacentElement('beforebegin', senderSelect);
+                }
+                senderSelect.id = 'sender-select';
+                
+                updateDraggableColumns();
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function updateDraggableColumns() {
+            const columnsContainer = document.getElementById('csv-columns');
+            columnsContainer.innerHTML = '';
+            
+            // Filter out sender column from draggable blocks
+            const availableHeaders = csvHeaders.filter(header => header !== senderColumn);
+            
+            availableHeaders.forEach(header => {
+                const span = document.createElement('span');
+                span.className = 'csv-column';
+                span.draggable = true;
+                span.textContent = header;
+                span.addEventListener('dragstart', e => {
+                    e.dataTransfer.setData('text/plain', `{{${header}}}`);
+                });
+                columnsContainer.appendChild(span);
+            });
+        }
+
         tinymce.init({
-          selector: 'textarea',
-          promotion: false,
-          plugins: [
-            // Core editing features
-            'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
-            // Your account includes a free trial of TinyMCE premium features
-            // Try the most popular premium features until Dec 22, 2024:
-            'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 'inlinecss', 'markdown',
-            // Early access to document converters
-            'importword', 'exportword', 'exportpdf'
-          ],
-          toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
-          tinycomments_mode: 'embedded',
-          tinycomments_author: 'Author name',
-          mergetags_list: [
-            { value: 'First.Name', title: 'First Name' },
-            { value: 'Email', title: 'Email' },
-          ],
-          ai_request: (request, respondWith) => respondWith.string(() => Promise.reject('See docs to implement AI Assistant')),
+            selector: 'textarea',
+            promotion: false,
+            plugins: [
+                'anchor', 'autolink', 'charmap', 'codesample', 'emoticons', 'image', 'link', 'lists', 
+                'media', 'searchreplace', 'table', 'visualblocks', 'wordcount',
+                'checklist', 'mediaembed', 'casechange', 'export', 'formatpainter', 'pageembed', 
+                'a11ychecker', 'tinymcespellchecker', 'permanentpen', 'powerpaste', 'advtable', 
+                'advcode', 'editimage', 'advtemplate', 'ai', 'mentions', 'tinycomments', 
+                'tableofcontents', 'footnotes', 'mergetags', 'autocorrect', 'typography', 
+                'inlinecss', 'markdown', 'importword', 'exportword', 'exportpdf'
+            ],
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | link image media table mergetags | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight | checklist numlist bullist indent outdent | emoticons charmap | removeformat',
+            setup: function(editor) {
+                editor.on('drop', function(e) {
+                    if (e.dataTransfer && e.dataTransfer.getData('text/plain').startsWith('{{')) {
+                        const content = e.dataTransfer.getData('text/plain');
+                        editor.insertContent(content);
+                        e.preventDefault();
+                    }
+                });
+            }
         });
-      </script>
+    </script>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto p-6">
@@ -38,8 +121,9 @@
             
             <div class="mb-6">
                 <label class="block mb-2">CSV File</label>
-                <input type="file" id="csvFile" accept=".csv" class="border p-2 rounded">
+                <input type="file" id="csvFile" accept=".csv" class="border p-2 rounded" onChange="handleCSVUpload(event)">
                 <div id="csvPreview" class="mt-4 overflow-x-auto"></div>
+                <div id="csv-columns" class="mb-4"></div>
             </div>
 
             <div class="mb-6">
